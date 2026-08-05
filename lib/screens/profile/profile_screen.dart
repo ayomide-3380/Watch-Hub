@@ -224,8 +224,10 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Mode Switcher Banner (Admin Panel Toggle)
-            Container(
+            // Admin Portal entry point — only visible to accounts flagged
+            // isAdmin=true in the database. Regular users never see this at all.
+            if (auth.user?.isAdmin == true)
+              Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: AppTheme.darkCharcoal,
@@ -242,24 +244,24 @@ class ProfileScreen extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Admin Portal View', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          Text('Admin Portal', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                           Text('Access store inventory & order management', style: TextStyle(color: AppTheme.textMuted, fontSize: 11)),
                         ],
                       ),
                     ],
                   ),
-                  Switch(
-                    value: auth.isAdminMode,
-                    activeColor: AppTheme.goldAccent,
-                    onChanged: (val) {
-                      auth.toggleAdminMode();
-                      if (val) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
-                        );
-                      }
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.goldAccent,
+                      foregroundColor: AppTheme.obsidianBlack,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+                      );
                     },
+                    child: const Text('Open'),
                   ),
                 ],
               ),

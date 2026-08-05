@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/watch_provider.dart';
 import '../../models/watch.dart';
 import '../../theme/app_theme.dart';
 
@@ -275,60 +276,74 @@ class _ConfiguratorScreenState extends State<ConfiguratorScreen> {
                     child: _isSaving 
                         ? const Center(child: CircularProgressIndicator(color: AppTheme.goldAccent))
                         : ElevatedButton(
-                            onPressed: () {
+                            onPressed: () async {
                               final cartProvider = context.read<CartProvider>();
+                              final watchProvider = context.read<WatchProvider>();
                               final messenger = ScaffoldMessenger.of(context);
                               final navigator = Navigator.of(context);
 
                               setState(() => _isSaving = true);
-                              Future.delayed(const Duration(milliseconds: 1000), () {
-                                final customWatch = Watch(
-                                  id: 'w_custom_${DateTime.now().millisecondsSinceEpoch}',
-                                  title: 'Bespoke $_selectedStyle',
-                                  brand: 'WatchHub Custom',
-                                  price: _totalPrice,
-                                  rating: 5.0,
-                                  reviewCount: 0,
-                                  imageUrls: [activeStyleImg],
-                                  category: 'Luxury',
-                                  type: 'Bespoke Configured',
-                                  description: 'A hand-crafted bespoke timepiece designed with $_selectedMetal, $_selectedBezel bezel, $_selectedDialColor dial, and $_selectedStrap strap.',
-                                  specifications: {
-                                    'Movement': 'Automatic Calibre WH-99',
-                                    'Case Metal': _selectedMetal,
-                                    'Bezel': _selectedBezel,
-                                    'Strap': _selectedStrap,
-                                    'Dial': _selectedDialColor,
-                                    'Water Resistance': '100m',
-                                  },
-                                  availableColors: [_selectedDialColor],
-                                  availableStraps: [_selectedStrap],
-                                  stockCount: 1,
-                                );
+                              await Future.delayed(const Duration(milliseconds: 1000));
 
-                                cartProvider.addToCart(
-                                  customWatch, 
-                                  color: _selectedDialColor, 
-                                  strap: _selectedStrap
-                                );
+                              final customWatch = Watch(
+                                id: 'w_custom_${DateTime.now().millisecondsSinceEpoch}',
+                                title: 'Bespoke $_selectedStyle',
+                                brand: 'WatchHub Custom',
+                                price: _totalPrice,
+                                rating: 5.0,
+                                reviewCount: 0,
+                                imageUrls: [activeStyleImg],
+                                category: 'Luxury',
+                                type: 'Bespoke Configured',
+                                description: 'A hand-crafted bespoke timepiece designed with $_selectedMetal, $_selectedBezel bezel, $_selectedDialColor dial, and $_selectedStrap strap.',
+                                specifications: {
+                                  'Movement': 'Automatic Calibre WH-99',
+                                  'Case Metal': _selectedMetal,
+                                  'Bezel': _selectedBezel,
+                                  'Strap': _selectedStrap,
+                                  'Dial': _selectedDialColor,
+                                  'Water Resistance': '100m',
+                                },
+                                availableColors: [_selectedDialColor],
+                                availableStraps: [_selectedStrap],
+                                stockCount: 1,
+                              );
 
-                                if (mounted) {
-                                  setState(() => _isSaving = false);
-                                  messenger.showSnackBar(
-                                    const SnackBar(
-                                      content: Row(
-                                        children: [
-                                          Icon(Icons.check_circle, color: AppTheme.successGreen),
-                                          SizedBox(width: 8),
-                                          Text('Custom watch added to cart!'),
-                                        ],
-                                      ),
-                                      behavior: SnackBarBehavior.floating,
+                              // Persist the bespoke build as a real catalog
+                              // entry first — the cart only stores a
+                              // watchId, so it needs to point at something
+                              // that actually exists in the backend.
+                              final saved = await watchProvider.addWatch(customWatch);
+
+                              if (saved) {
+                                await cartProvider.addToCart(
+                                  customWatch,
+                                  color: _selectedDialColor,
+                                  strap: _selectedStrap,
+                                );
+                              }
+
+                              if (mounted) {
+                                setState(() => _isSaving = false);
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(
+                                          saved ? Icons.check_circle : Icons.error_outline,
+                                          color: saved ? AppTheme.successGreen : Colors.redAccent,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(saved
+                                            ? 'Custom watch added to cart!'
+                                            : 'Could not save your custom watch. Please try again.'),
+                                      ],
                                     ),
-                                  );
-                                  navigator.pop();
-                                }
-                              });
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                                if (saved) navigator.pop();
+                              }
                             },
                             child: const Text('ADD TO CART'),
                           ),
@@ -342,5 +357,3 @@ class _ConfiguratorScreenState extends State<ConfiguratorScreen> {
     );
   }
 }
-
-

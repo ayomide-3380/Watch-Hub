@@ -27,6 +27,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    // Load every customer's orders for this admin view (separate from the
+    // admin's own personal order history).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final watchProvider = Provider.of<WatchProvider>(context, listen: false);
+      final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+      orderProvider.fetchAllOrdersForAdmin(watchProvider.allWatches);
+    });
   }
 
   @override
@@ -411,7 +419,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
     final orderProvider = Provider.of<OrderProvider>(context);
 
     final watches = watchProvider.allWatches;
-    final orders = orderProvider.orders;
+    final orders = orderProvider.allOrders;
     final totalRevenue = orders.fold(0.0, (sum, o) => sum + o.totalAmount);
     final lowStockCount = watches.where((w) => w.stockCount <= 3).length;
 

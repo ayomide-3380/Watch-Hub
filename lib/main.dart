@@ -61,9 +61,40 @@ class RootNavigationScreen extends StatefulWidget {
 
 class _RootNavigationScreenState extends State<RootNavigationScreen> {
   int _currentTab = 0;
+  String? _loadedForUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<WatchProvider>(context, listen: false).loadWatches();
+    });
+  }
 
   void _navigateToCatalog() {
     setState(() => _currentTab = 1);
+  }
+
+  Future<void> _loadUserData(String userId) async {
+    final watchProvider = Provider.of<WatchProvider>(context, listen: false);
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    final wishlistProvider =
+        Provider.of<WishlistProvider>(context, listen: false);
+    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+
+    // Cart/wishlist/order items only carry watchIds from the backend, so
+    // the catalog must be loaded first to resolve them into full Watch
+    // objects for display.
+    if (watchProvider.allWatches.isEmpty) {
+      await watchProvider.loadWatches();
+    }
+    final allWatches = watchProvider.allWatches;
+
+    await Future.wait([
+      cartProvider.loadCart(userId, allWatches),
+      wishlistProvider.loadWishlist(userId, allWatches),
+      orderProvider.fetchOrders(userId, allWatches),
+    ]);
   }
 
   @override
@@ -72,7 +103,25 @@ class _RootNavigationScreenState extends State<RootNavigationScreen> {
 
     // If user is logged out, show Login screen
     if (!authProvider.isLoggedIn) {
+      if (_loadedForUserId != null) {
+        // User just logged out — clear any leftover per-user state so the
+        // next signed-in user doesn't briefly see the previous one's data.
+        _loadedForUserId = null;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Provider.of<CartProvider>(context, listen: false).reset();
+          Provider.of<WishlistProvider>(context, listen: false).reset();
+          Provider.of<OrderProvider>(context, listen: false).reset();
+        });
+      }
       return const LoginScreen();
+    }
+
+    final userId = authProvider.user?.id;
+    if (userId != null && userId != _loadedForUserId) {
+      _loadedForUserId = userId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadUserData(userId);
+      });
     }
 
     final List<Widget> screens = [

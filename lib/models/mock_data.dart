@@ -1,7 +1,5 @@
 import 'watch.dart';
 import 'review.dart';
-import 'order.dart';
-import 'cart_item.dart';
 import 'user_profile.dart';
 import 'chat_message.dart';
 
@@ -470,99 +468,6 @@ class MockData {
       date: DateTime.now().subtract(const Duration(days: 7)),
       helpfulCount: 19,
       isVerifiedPurchase: true,
-    ),
-  ];
-
-  static final List<Order> sampleOrders = [
-    Order(
-      id: 'WH-9082-2026',
-      orderDate: DateTime.now().subtract(const Duration(days: 2)),
-      items: [
-        CartItem(
-          watch: watches[1],
-          selectedColor: 'Matte Black',
-          selectedStrap: 'Steel Bracelet',
-          quantity: 1,
-        ),
-      ],
-      subtotal: 7600.0,
-      tax: 608.0,
-      shippingFee: 0.0,
-      totalAmount: 8208.0,
-      shippingAddress: '742 Evergreen Terrace, Suite 4B, New York, NY 10021',
-      paymentMethod: 'Apple Pay (•••• 4921)',
-      status: OrderStatus.shipped,
-      trackingSteps: [
-        TrackingStep(
-          title: 'Order Placed & Payment Verified',
-          description: 'Payment authorized via Apple Pay.',
-          timestamp: DateTime.now().subtract(const Duration(days: 2, hours: 4)),
-          isCompleted: true,
-        ),
-        TrackingStep(
-          title: 'Master Horologist Inspection',
-          description: 'Multi-point timing test and authenticity seal certified.',
-          timestamp: DateTime.now().subtract(const Duration(days: 1, hours: 14)),
-          isCompleted: true,
-        ),
-        TrackingStep(
-          title: 'Dispatched with Armored Courier',
-          description: 'FedEx Priority Overnight Express - Tracking #98230194821',
-          timestamp: DateTime.now().subtract(const Duration(hours: 8)),
-          isCompleted: true,
-        ),
-        TrackingStep(
-          title: 'Out for Delivery',
-          description: 'Courier assigned to local delivery vehicle.',
-          timestamp: DateTime.now().add(const Duration(hours: 14)),
-          isCompleted: false,
-        ),
-        TrackingStep(
-          title: 'Delivered',
-          description: 'Signature required upon receipt.',
-          timestamp: DateTime.now().add(const Duration(hours: 20)),
-          isCompleted: false,
-        ),
-      ],
-    ),
-    Order(
-      id: 'WH-7410-2026',
-      orderDate: DateTime.now().subtract(const Duration(days: 45)),
-      items: [
-        CartItem(
-          watch: watches[5],
-          selectedColor: 'Silvered Opaline',
-          selectedStrap: 'Steel SmartLink',
-          quantity: 1,
-        ),
-      ],
-      subtotal: 8100.0,
-      tax: 648.0,
-      shippingFee: 0.0,
-      totalAmount: 8748.0,
-      shippingAddress: '88 Ocean Drive, Penthouse 12, Miami, FL 33139',
-      paymentMethod: 'Visa Ending in 8812',
-      status: OrderStatus.delivered,
-      trackingSteps: [
-        TrackingStep(
-          title: 'Order Placed',
-          description: 'Order confirmed.',
-          timestamp: DateTime.now().subtract(const Duration(days: 45)),
-          isCompleted: true,
-        ),
-        TrackingStep(
-          title: 'Inspected',
-          description: 'Quality pass confirmed.',
-          timestamp: DateTime.now().subtract(const Duration(days: 44)),
-          isCompleted: true,
-        ),
-        TrackingStep(
-          title: 'Delivered',
-          description: 'Delivered to resident.',
-          timestamp: DateTime.now().subtract(const Duration(days: 43)),
-          isCompleted: true,
-        ),
-      ],
     ),
   ];
 

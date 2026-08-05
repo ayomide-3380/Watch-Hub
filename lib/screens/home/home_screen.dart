@@ -85,11 +85,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Personalized recommendations with custom matching scores
     final recommendedWatches = watchProvider.allWatches
-        .where((w) => w.category == 'Diver' || w.category == 'Chronograph')
-        .toList();
+    .where((w) => 
+    w.category == 'Automatic' || 
+    w.category == 'Luxury')
+    .toList();
 
     // Select Daytona as our Daily Deal watch
-    final dailyDealWatch = watchProvider.getWatchById('w_001');
+    final dailyDealWatch = watchProvider.allWatches.isNotEmpty
+    ? watchProvider.allWatches.first
+    : null;
 
     return Scaffold(
       backgroundColor: AppTheme.obsidianBlack,
@@ -362,7 +366,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
                             child: Image.network(
-                              dailyDealWatch.imageUrls.first,
+                              dailyDealWatch.imageUrls.isNotEmpty
+                                  ? dailyDealWatch.imageUrls.first
+                                  : 'https://via.placeholder.com/300',
                               width: 80,
                               height: 80,
                               fit: BoxFit.cover,
@@ -373,13 +379,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               minimumSize: Size.zero,
-                              textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                              textStyle: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => ProductDetailsScreen(watchId: dailyDealWatch.id),
+                                  builder: (_) =>
+                                      ProductDetailsScreen(watchId: dailyDealWatch.id),
                                 ),
                               );
                             },
@@ -471,7 +481,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                'TOP MANUFACTURES',
+                'TOP MANUFACTURERS',
                 style: Theme.of(context).textTheme.labelLarge,
               ),
             ),
@@ -991,7 +1001,9 @@ class _HomeScreenState extends State<HomeScreen> {
           fit: StackFit.expand,
           children: [
             AppImage(
-              url: watch.imageUrls.first,
+              url: watch.imageUrls.isNotEmpty
+                  ? watch.imageUrls.first
+                  : 'https://via.placeholder.com/600x400',
               fit: BoxFit.cover,
             ),
             Container(
@@ -1001,7 +1013,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    AppTheme.obsidianBlack.withValues(alpha: 0.92),
+                    AppTheme.obsidianBlack.withOpacity(0.92),
                     Colors.transparent,
                   ],
                 ),

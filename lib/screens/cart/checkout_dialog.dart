@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/watch_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_image.dart';
 import 'luxury_order_confirmation_screen.dart';
@@ -31,6 +32,7 @@ class _CheckoutModalState extends State<CheckoutModal> {
   int _currentStep = 0;
   String _selectedPaymentMethod = 'Apple Pay';
   late String _selectedAddress;
+  bool _isPlacingOrder = false;
 
   @override
   void initState() {
@@ -100,14 +102,26 @@ class _CheckoutModalState extends State<CheckoutModal> {
               Expanded(
                 flex: 2,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_currentStep < 2) {
-                      setState(() => _currentStep++);
-                    } else {
-                      _processOrder(context, cartProvider);
-                    }
-                  },
-                  child: Text(_currentStep == 2 ? 'PLACE ORDER NOW' : 'CONTINUE'),
+                  onPressed: _isPlacingOrder
+                      ? null
+                      : () {
+                          if (_currentStep < 2) {
+                            setState(() => _currentStep++);
+                          } else {
+                            _processOrder(context, cartProvider);
+                          }
+                        },
+                  child: _isPlacingOrder
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(AppTheme.obsidianBlack),
+                          ),
+                        )
+                      : Text(_currentStep == 2 ? 'PLACE ORDER NOW' : 'CONTINUE'),
                 ),
               ),
             ],
@@ -266,24 +280,43 @@ class _CheckoutModalState extends State<CheckoutModal> {
     );
   }
 
-  void _processOrder(BuildContext context, CartProvider cartProvider) {
+  Future<void> _processOrder(
+      BuildContext context, CartProvider cartProvider) async {
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final watchProvider = Provider.of<WatchProvider>(context, listen: false);
 
-    final newOrder = orderProvider.createOrder(
-      items: cartProvider.items,
-      subtotal: cartProvider.subtotal,
-      tax: cartProvider.tax,
-      shippingFee: cartProvider.shippingFee,
-      discount: cartProvider.discountAmount,
-      totalAmount: cartProvider.grandTotal,
+    final userId = authProvider.user?.id;
+    if (userId == null) return;
+
+    setState(() => _isPlacingOrder = true);
+
+    final newOrder = await orderProvider.checkout(
+      userId: userId,
       shippingAddress: _selectedAddress,
       paymentMethod: _selectedPaymentMethod,
+      discountAmount: cartProvider.discountAmount,
+      allWatches: watchProvider.allWatches,
     );
 
+    if (!context.mounted) return;
+    setState(() => _isPlacingOrder = false);
+
+    if (newOrder == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              orderProvider.errorMessage ?? 'Could not place order. Please try again.'),
+        ),
+      );
+      return;
+    }
+
+    // Backend already deleted the cart items server-side during checkout;
+    // this just syncs local cart state and clears the promo code.
     cartProvider.clearCart();
     Navigator.pop(context); // Close checkout sheet
 
-    // Navigate directly to LuxuryOrderConfirmationScreen
     Navigator.push(
       context,
       MaterialPageRoute(

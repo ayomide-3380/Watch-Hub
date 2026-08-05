@@ -7,8 +7,8 @@ class Watch {
   final double rating;
   final int reviewCount;
   final List<String> imageUrls;
-  final String category; // 'Luxury', 'Chronograph', 'Diver', 'Dress', 'Smart'
-  final String type; // e.g. Automatic, Quartz, Solar, Mechanical
+  final String category;
+  final String type;
   final String description;
   final Map<String, String> specifications;
   final List<String> availableColors;
@@ -40,7 +40,10 @@ class Watch {
   });
 
   bool get isAvailable => stockCount > 0;
-  bool get hasDiscount => originalPrice != null && originalPrice! > price;
+
+  bool get hasDiscount =>
+      originalPrice != null && originalPrice! > price;
+
   int get discountPercentage => hasDiscount
       ? (((originalPrice! - price) / originalPrice!) * 100).round()
       : 0;
@@ -85,5 +88,61 @@ class Watch {
       isFeatured: isFeatured ?? this.isFeatured,
       isNewArrival: isNewArrival ?? this.isNewArrival,
     );
+  }
+
+  factory Watch.fromJson(Map<String, dynamic> json) {
+    return Watch(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      brand: json['brand'] ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      originalPrice: json['originalPrice'] != null
+          ? (json['originalPrice'] as num).toDouble()
+          : null,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
+      imageUrls: json['imageUrls'] != null
+          ? List<String>.from(json['imageUrls'])
+          : [],
+      category: json['category'] ?? '',
+      type: json['type'] ?? '',
+      description: json['description'] ?? '',
+      specifications: json['specifications'] != null
+          ? Map<String, String>.from(json['specifications'])
+          : {},
+      availableColors: json['availableColors'] != null
+          ? List<String>.from(json['availableColors'])
+          : [],
+      availableStraps: json['availableStraps'] != null
+          ? List<String>.from(json['availableStraps'])
+          : [],
+      stockCount: (json['stockCount'] as num?)?.toInt() ?? 0,
+      isPopular: json['isPopular'] == true,
+      isFeatured: json['isFeatured'] == true,
+      isNewArrival: json['isNewArrival'] == true,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'brand': brand,
+      'price': price,
+      'originalPrice': originalPrice,
+      'rating': rating,
+      'reviewCount': reviewCount,
+      'imageUrls': imageUrls,
+      'category': category,
+      'type': type,
+      'description': description,
+      'specifications': specifications,
+      'availableColors': availableColors,
+      'availableStraps': availableStraps,
+      'stockCount': stockCount,
+      'isPopular': isPopular,
+      'isFeatured': isFeatured,
+      'isNewArrival': isNewArrival,
+    };
   }
 }

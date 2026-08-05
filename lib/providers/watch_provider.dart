@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 import '../models/watch.dart';
-import '../models/mock_data.dart';
 
 enum SortOption {
   featured,
@@ -11,7 +13,10 @@ enum SortOption {
 }
 
 class WatchProvider with ChangeNotifier {
-  final List<Watch> _watches = List.from(MockData.watches);
+  List<Watch> _watches = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
   String _selectedCategory = 'All';
   String _selectedBrand = 'All';
   String _searchQuery = '';
@@ -19,10 +24,11 @@ class WatchProvider with ChangeNotifier {
   SortOption _sortBy = SortOption.featured;
   final List<String> _recentlyViewedWatchIds = [];
 
-  // Advanced Filters
   String _selectedMovement = 'All';
   double _selectedDiameter = 46.0;
 
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
   List<Watch> get allWatches => List.unmodifiable(_watches);
   String get selectedCategory => _selectedCategory;
   String get selectedBrand => _selectedBrand;
@@ -31,7 +37,49 @@ class WatchProvider with ChangeNotifier {
   SortOption get sortBy => _sortBy;
   String get selectedMovement => _selectedMovement;
   double get selectedDiameter => _selectedDiameter;
-  
+
+  Future<void> loadWatches() async {
+  _isLoading = true;
+  _errorMessage = null;
+  notifyListeners();
+
+  try {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/watches'),
+    );
+
+    debugPrint("Status Code: ${response.statusCode}");
+    debugPrint("Response: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+
+      debugPrint("Number of watches: ${data.length}");
+
+      _watches = data.map((json) => Watch.fromJson(json)).toList();
+
+      debugPrint("All watches: ${_watches.length}");
+      debugPrint("Featured: ${featuredWatches.length}");
+      debugPrint("Popular: ${popularWatches.length}");
+      debugPrint("New: ${newArrivals.length}");
+
+      debugPrint("Loaded watches: ${_watches.length}");
+
+      _isLoading = false;
+      notifyListeners();
+    } else {
+      _errorMessage = 'Failed to load watches';
+      _isLoading = false;
+      notifyListeners();
+    }
+  } catch (e) {
+    debugPrint(e.toString());
+    _errorMessage = 'Could not connect to server';
+    _isLoading = false;
+    notifyListeners();
+  }
+}
+
   List<Watch> get recentlyViewedWatches => _recentlyViewedWatchIds
       .map((id) => getWatchById(id))
       .whereType<Watch>()
@@ -47,12 +95,20 @@ class WatchProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  List<Watch> get featuredWatches =>
-      _watches.where((w) => w.isFeatured).toList();
-  List<Watch> get popularWatches =>
-      _watches.where((w) => w.isPopular).toList();
-  List<Watch> get newArrivals =>
-      _watches.where((w) => w.isNewArrival).toList();
+  List<Watch> get featuredWatches {
+    final list = _watches.where((w) => w.isFeatured).toList();
+    return list.isNotEmpty ? list : _watches;
+  }
+  
+  List<Watch> get popularWatches {
+    final list = _watches.where((w) => w.isPopular).toList();
+    return list.isNotEmpty ? list : _watches;
+  }
+  
+  List<Watch> get newArrivals {
+    final list = _watches.where((w) => w.isNewArrival).toList();
+    return list.isNotEmpty ? list : _watches;
+  }
 
   List<Watch> get filteredWatches {
     return _watches.where((watch) {
@@ -143,22 +199,58 @@ class WatchProvider with ChangeNotifier {
   }
 
   // Admin capabilities
-  void updateStock(String watchId, int newStock) {
+  Future<bool> updateStock(String watchId, int newStock) async {
     final index = _watches.indexWhere((w) => w.id == watchId);
-    if (index != -1) {
-      _watches[index] = _watches[index].copyWith(stockCount: newStock);
-      notifyListeners();
+    if (index == -1) return false;
+
+    try {
+      final response = await http.patch(
+        Uri.parse('${ApiConfig.baseUrl}/watches/$watchId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'stockCount': newStock}),
+      );
+      if (response.statusCode == 200) {
+        _watches[index] = _watches[index].copyWith(stockCount: newStock);
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
     }
   }
 
-  void addWatch(Watch watch) {
-    _watches.insert(0, watch);
-    notifyListeners();
+  Future<bool> addWatch(Watch watch) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/watches'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(watch.toJson()),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _watches.insert(0, Watch.fromJson(data));
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
   }
 
-  void deleteWatch(String watchId) {
-    _watches.removeWhere((w) => w.id == watchId);
-    notifyListeners();
+  Future<bool> deleteWatch(String watchId) async {
+    try {
+      final response = await http.delete(Uri.parse('${ApiConfig.baseUrl}/watches/$watchId'));
+      if (response.statusCode == 204) {
+        _watches.removeWhere((w) => w.id == watchId);
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
   }
 
   void updateWatch(Watch updatedWatch) {

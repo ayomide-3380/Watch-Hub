@@ -38,10 +38,11 @@ class _LuxuryOrderConfirmationScreenState extends State<LuxuryOrderConfirmationS
       CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
     );
 
-    // Award loyalty points for checkout (e.g. 5% of order value)
+    // Loyalty points are awarded server-side during checkout (1 point per
+    // $1000 of subtotal). Refresh the profile to pick up the real balance
+    // instead of re-calculating and re-adding points locally.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final pointsAwarded = (widget.order.totalAmount / 100).round();
-      context.read<AuthProvider>().addPoints(pointsAwarded);
+      context.read<AuthProvider>().refreshProfile();
       context.read<AuthProvider>().unlockBadge('High Roller');
     });
   }
@@ -63,7 +64,7 @@ class _LuxuryOrderConfirmationScreenState extends State<LuxuryOrderConfirmationS
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
-    final pointsAwarded = (widget.order.totalAmount / 100).round();
+    final pointsAwarded = (widget.order.subtotal / 1000).floor();
 
     return Scaffold(
       backgroundColor: AppTheme.obsidianBlack,
