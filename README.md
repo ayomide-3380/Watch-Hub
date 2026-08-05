@@ -44,7 +44,7 @@ You'll need both the backend and frontend running for the app to work fully.
 
 ### 1. Backend setup
 
-See [`backend/README.md`](backend/README.md) for full setup instructions
+See [`backend/README.md`](watchhub-backend/watchhub/README.md) for full setup instructions
 (MySQL setup, environment variables, running the server).
 
 ### 2. Frontend setup
